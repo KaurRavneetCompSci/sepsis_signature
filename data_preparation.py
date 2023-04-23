@@ -83,9 +83,11 @@ class DataPreparation:
                     data_list = []
                     #print(len(sepsis))
                     uhidKey = []
+                    counterData =0
                     for index, row in sepsis.iterrows():
                         uhidKey = row['uhid']
-                        tuple = (row['heartrate'], row['spo2'])
+                        tuple = (row['heartrate'], row['spo2'],counterData)
+                        counterData= counterData+1
                         data_list.append(tuple)
                     uhidCompositeKey = str(uhidKey)+ '_sepsis'
                     dict_Signature[uhidCompositeKey].append(data_list)
@@ -99,9 +101,11 @@ class DataPreparation:
                     data_list = []
                     #print(len(sepsis))
                     uhidKey = []
+                    counterData =0
                     for index, row in sepsis.iterrows():
                         uhidKey = row['uhid']
-                        tuple = (row['heartrate'], row['spo2'])
+                        tuple = (row['heartrate'], row['spo2'],counterData)
+                        counterData= counterData+1
                         data_list.append(tuple)
                     uhidCompositeKey = str(uhidKey) + '_nosepsis'
                     dict_Signature[uhidCompositeKey].append(data_list)

@@ -45,18 +45,21 @@ def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
 
 def generateFrequencyInformation(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCase):
     plt.figure(5)
-    figure5, axis5 = plt.subplots(4, 1)
+    figure5, axis5 = plt.subplots(6, 1)
+    figure5.suptitle('Figure 1- plot of sepsis and no-sepsis after convolution', fontsize=16)
     print('sepsis uhid=',uhidSepsisCase,' No Sepsis uhid=',uhidNoSepsisCase)
     sepsisPatient = X[uhidSepsisCase+'_'+'sepsis'][0]
     noSepsisPatient = X[uhidNoSepsisCase + '_' + 'nosepsis'][0]
 
     hrArray,spO2Array = convertTo1DArrayTuple(sepsisPatient)
-
-    kernel_size = 60
+    hrArrayNoSepsis, spO2ArrayNoSepsis = convertTo1DArrayTuple(noSepsisPatient)
+    kernel_size = 30
     kernel = np.ones(kernel_size) / kernel_size
-    data_convolvedHR = np.convolve(hrArray, kernel, mode='same')
-    data_convolvedSPO2 = np.convolve(spO2Array, kernel, mode='same')
+    data_convolvedHR = np.convolve(hrArray, kernel, mode='valid')
+    data_convolvedSPO2 = np.convolve(spO2Array, kernel, mode='valid')
 
+    data_convolvedHRNoSepsis = np.convolve(hrArrayNoSepsis, kernel, mode='valid')
+    data_convolvedSPO2NoSepsis = np.convolve(spO2ArrayNoSepsis, kernel, mode='valid')
     # lminHR, lmaxHR = hl_envelopes_idx(np.array(hrArray))
     # lminSPO2, lmaxSPO2 = hl_envelopes_idx(np.array(spO2Array))
 
@@ -69,11 +72,18 @@ def generateFrequencyInformation(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCas
     # b, a = scipy.signal.butter(3, [.01, .02], 'band')
     # filteredBandPass = scipy.signal.lfilter(b, a, sepsisPatient)
 
-
-    axis5[0].plot(sepsisPatient)
-    axis5[1].plot(noSepsisPatient)
-    axis5[2].plot(data_convolvedHR, 'b', label='low')
-    axis5[3].plot(data_convolvedSPO2, 'b', label='low')
+    axis5[0].set_title('Sepsis Patient')
+    axis5[0].plot(np.array(sepsisPatient)[:,0])
+    axis5[1].set_title('No Sepsis Patient')
+    axis5[1].plot(np.array(noSepsisPatient)[:,0])
+    axis5[2].set_title('Averaged/Convolved Sepsis HR')
+    axis5[2].plot(data_convolvedHR)
+    axis5[3].set_title('Averaged/Convolved Sepsis Sp02')
+    axis5[3].plot(data_convolvedSPO2)
+    axis5[4].set_title('Averaged/Convolved No Sepsis HR')
+    axis5[4].plot(data_convolvedHRNoSepsis)
+    axis5[5].set_title('Averaged/Convolved No Sepsis SpO2')
+    axis5[5].plot(data_convolvedSPO2NoSepsis)
 
     return True
 
@@ -82,11 +92,11 @@ def plotSepsisAndNoSepsisSignatureCoefficient(debugCode, numberOfPatients, uhidS
     if (debugCode):
         figure1, axis1 = plt.subplots(2, 2)
     else:
-        figur1, axis1 = plt.subplots(numberOfPatients, 3)
+        figure1, axis1 = plt.subplots(numberOfPatients, 3)
     debugSepsisPlot = False
     debugNoSepsisPlot = False
     debugCounter = 0
-
+    figure1.suptitle('Figure 3- plot of sepsis and no-sepsis signature data', fontsize=16)
     sepsisPatient = X[uhidSepsisCase+'_'+'sepsis'][0]
     noSepsisPatient = X[uhidNoSepsisCase + '_' + 'nosepsis'][0]
     i=0
@@ -98,10 +108,13 @@ def plotSepsisAndNoSepsisSignatureCoefficient(debugCode, numberOfPatients, uhidS
         nosepsisPatientData = noSepsisPatient[i:i+windowLength]
         two_dim_stream_physiological_sepsis = np.array(sepsisPatientData)
         two_dim_stream_physiological_nosepsis = np.array(nosepsisPatientData)
-        axis1[0, counter].plot(two_dim_stream_physiological_sepsis)
-        axis1[1, counter].plot(two_dim_stream_physiological_nosepsis)
+        hr_stream_physiological_sepsis = two_dim_stream_physiological_sepsis[:, 0]
+        spo2_stream_physiological_sepsis = two_dim_stream_physiological_sepsis[:, 1]
+        axis1[0, counter].set_title('Raw HR data')
+        axis1[0, counter].plot(hr_stream_physiological_sepsis)
+        axis1[0, counter].set_title('Raw SpO2 data')
+        axis1[1, counter].plot(spo2_stream_physiological_sepsis)
         i = i + windowLength
-        counter = counter + 1
 
     print('sepsis case uhid=', uhidSepsisCase, ' nosepsis uhid=', uhidNoSepsisCase)
     coefficientListNoSepsis = list(zippedUHIDTupleDict[uhidNoSepsisCase])
@@ -123,23 +136,31 @@ def plotSepsisAndNoSepsisSignatureCoefficient(debugCode, numberOfPatients, uhidS
         axis1[1, 1].set_xlabel('Depth is 3 and 15 elements')
         axis1[1, 1].set_ylabel('Coefficients')
 
-def plotDataAndSignature(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCase,timeBlockSize, windowLength):
+def plotDataAndSignature(X,dict_SignatureHR,uhidSepsisCase,uhidNoSepsisCase,timeBlockSize, windowLength):
     print('sepsis uhid=',uhidSepsisCase,' No Sepsis uhid=',uhidNoSepsisCase)
     # In figure two plot time by time data and its corresponding signature
     plt.figure(2)
     timeBlocksCounter = int(timeBlockSize/windowLength)
     figure2, axis2 = plt.subplots(2, timeBlocksCounter)
+    figure2.suptitle('Figure 2 (a)- block wise sepsis & signature content', fontsize=14)
+
     plt.figure(3)
     figure3, axis3 = plt.subplots(2, timeBlocksCounter)
+    figure3.suptitle('Figure 2 (b)- block wise No sepsis & signature content', fontsize=14)
+
     sepsisPatient = X[uhidSepsisCase+'_'+'sepsis'][0]
     noSepsisPatient = X[uhidNoSepsisCase + '_' + 'nosepsis'][0]
+
+
+
     i=0
     counter =0
     plt.figure(4)
     figure4, axis4 = plt.subplots(2, 1)
-    axis4[0].plot(np.array(sepsisPatient))
+    figure4.suptitle('Figure 00- plot of sepsis and no-sepsis total raw data as is', fontsize=16)
+    axis4[0].plot(np.array(sepsisPatient)[:,[0,1]])
     axis4[0].set_ylabel('HR/SpO2 Continuous')
-    axis4[1].plot(np.array(noSepsisPatient))
+    axis4[1].plot(np.array(noSepsisPatient)[:,[0,1]])
     axis4[1].set_ylabel('HR/SpO2 Continuous')
 
 
@@ -148,11 +169,13 @@ def plotDataAndSignature(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCase,timeBl
         keyNoSepsisValue = str(uhidNoSepsisCase) + '_' + str(counter)
         sepsisPatientData = sepsisPatient[i:i+windowLength]
         nosepsisPatientData = noSepsisPatient[i:i+windowLength]
-        signatureDataSepsis = dict_Signature[keySepsisValue][0]
-        signatureDataNoSepsis = dict_Signature[keyNoSepsisValue][0]
-        two_dim_stream_physiological_sepsis = np.array(sepsisPatientData)
-        two_dim_stream_physiological_nosepsis = np.array(nosepsisPatientData)
-        axis2[0, counter].plot(two_dim_stream_physiological_sepsis)
+        signatureDataSepsis = dict_SignatureHR[keySepsisValue][0]
+        signatureDataNoSepsis = dict_SignatureHR[keyNoSepsisValue][0]
+        #plot HR as the signature is HR
+        two_dim_stream_physiological_HR_sepsis = np.array(sepsisPatientData)[:, 0]
+        two_dim_stream_physiological_HR_nosepsis = np.array(nosepsisPatientData)[:, 0]
+
+        axis2[0, counter].plot(two_dim_stream_physiological_HR_sepsis)
         axis2[1, counter].plot(signatureDataSepsis)
         #only for the first chart show the y label but hide for other 120 min charts to give continuous feeling to user
         if(counter==0):
@@ -172,7 +195,7 @@ def plotDataAndSignature(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCase,timeBl
             axis2[1, counter].set_xticks([])
             axis2[1, counter].set_yticks([])
 
-        axis3[0, counter].plot(two_dim_stream_physiological_nosepsis)
+        axis3[0, counter].plot(two_dim_stream_physiological_HR_nosepsis)
         axis3[1, counter].plot(signatureDataNoSepsis)
         if (counter == 0):
             axis3[0, counter].set_ylabel('HR/SpO2 Amplitude')

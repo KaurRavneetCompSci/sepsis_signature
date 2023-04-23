@@ -2,9 +2,12 @@ import esig.tosig as ts
 import numpy as np
 from collections import defaultdict
 import csv
+from sklearn.preprocessing import normalize
 
-def generateSignature(X,depthSignature, windowLength):
-    dict_Signature = defaultdict(list)
+def generateSignature(X,Y, depthSignature, windowLength,lengthofDataToProcess):
+    y_final = []
+    dict_SignatureHR = defaultdict(list)
+    dict_SignatureSpo2 = defaultdict(list)
     # debugging related flags
     debugSepsisPlot = False
     debugNoSepsisPlot = False
@@ -24,22 +27,28 @@ def generateSignature(X,depthSignature, windowLength):
         #aim is to do one for sepsis and one for nosepsis in debug mode
         eachPatient = X[uhidKey][0]
         # print(len(eachPatient))
-        originalSize = len(eachPatient)
         listUHID.append(uhid)
         if (patientCaseType == 'nosepsis'):
             uhidNoSepsisCase = uhid
             debugNoSepsisPlot = True
-        while(i < originalSize - 1):
+        while(i < lengthofDataToProcess):
             eachPatientData = eachPatient[i:i+windowLength]
             #uhid is the first column - remove it
             eachPatientData = eachPatientData[1:]
             two_dim_stream_physiological = np.array(eachPatientData)
+            y_final.append(Y[indexPatient])
+            hr_stream_physiological = two_dim_stream_physiological[:,[0,2]]
+            spo2_stream_physiological = two_dim_stream_physiological[:, [1,2]]
             keyValue = str(uhid)+'_'+str(timeBlocksCounter)
-            signatureLength = ts.sigdim(2, depthSignature)
             # print(str(signatureLength))
             #Signature size of input array of dimension 3 is of length 40. for dimension 2 it is 15
-            signatureOutput = ts.stream2sig(two_dim_stream_physiological, depthSignature)
-            dict_Signature[keyValue].append(list(signatureOutput))
+            hr_stream_physiological_nm = normalize(hr_stream_physiological, axis=0, norm='max')
+            spo2_stream_physiological_nm = normalize(spo2_stream_physiological, axis=0, norm='max')
+
+            signatureOutputHR = ts.stream2sig(hr_stream_physiological_nm, depthSignature)
+            signatureOutputSpo2 = ts.stream2sig(spo2_stream_physiological_nm, depthSignature)
+            dict_SignatureHR[keyValue].append(list(signatureOutputHR))
+            dict_SignatureSpo2[keyValue].append(list(signatureOutputSpo2))
             i = i + windowLength
             timeBlocksCounter = timeBlocksCounter +1
         indexPatient = indexPatient+1
@@ -52,7 +61,7 @@ def generateSignature(X,depthSignature, windowLength):
         #     break
     #two_dim_stream_physiological = np.random.random(size=(121,2))
     # zippedUHIDTuple = list(repeat([], numberOfPatients))
-    return dict_Signature,listUHID, uhidSepsisCase, uhidNoSepsisCase
+    return dict_SignatureHR,dict_SignatureSpo2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final
 
 
 def concatenateSignatureCoefficients(dict_Signature,listUHID,timeBlocksCounter):
