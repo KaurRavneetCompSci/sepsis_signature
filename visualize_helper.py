@@ -13,6 +13,56 @@ def convertTo1DArrayTuple(inputTuple):
         spo2Array.append(x[1])
     return np.array(hrArray),np.array(spo2Array)
 
+def convertTo1DArrayAugmentedTuple(inputTuple,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,numberOfPatients):
+
+    originalArray =[]
+    augmentedArray=[]
+    patientCounter = 0
+    for uhidKey in inputTuple:
+        plt.figure(patientCounter)
+        figure, axis = plt.subplots(4, 1)
+        figure.suptitle('Figure - plot of data before and after augmentation', fontsize=16)
+        #x contains spo2 and hr
+        i = 0
+        timeBlocksCounter = 0
+        splitResultsUHID = uhidKey.split('_')
+        uhid = splitResultsUHID[0]
+        patientCaseType = splitResultsUHID[1]
+        eachPatient = inputTuple[uhidKey][0]
+        #uhidKey - 2 Parameter
+        eachSignature = []
+        eachSignatureAug = []
+        while(i < windowLength):
+            keyNormal = uhid + "_" + str(i)
+            keyAug = uhidKey + "_" + str(i)
+            eachSignature.extend(dict_SignatureHR[keyNormal][0])
+            eachSignatureAug.extend(dict_SignatureHR[keyAug][0])
+            i = i + 1
+
+        patientAugDataSpO2 = []
+        eachPatientData = eachPatient[i:i+(2*lengthofDataToProcess):2]
+        eachPatientDataAugmented = eachPatient[i+1:i+(2*lengthofDataToProcess):2]
+        two_dim_stream_physiological = np.array(eachPatientData)
+        two_dim_stream_physiological_aug = np.array(eachPatientDataAugmented)
+
+        two_dim_stream_signature = np.array(eachSignature)
+        two_dim_stream_signature_aug = np.array(eachSignatureAug)
+
+        axis[0].set_title('Patient'+uhidKey)
+        axis[0].plot(np.array(two_dim_stream_physiological)[:,0])
+        axis[1].set_title('Augmented Patient'+uhidKey)
+        axis[1].plot(np.array(two_dim_stream_physiological_aug)[:,0])
+        axis[2].set_title('Signature of Raw Data' + uhidKey)
+        axis[2].plot(np.array(two_dim_stream_signature))
+        axis[3].set_title('Signature of Augmented Data' + uhidKey)
+        axis[3].plot(np.array(two_dim_stream_signature_aug))
+        patientCounter = patientCounter+1;
+    return True
+
+
+
+
+
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
     """
     Input :
@@ -42,6 +92,12 @@ def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
     lmax = lmax[[i + np.argmax(s[lmax[i:i + dmax]]) for i in range(0, len(lmax), dmax)]]
 
     return lmin, lmax
+
+
+def generatePlotsForDataValidation(XAugHR,XAugSpO2,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter):
+    numberOfPatients = len(XAugHR)*2
+    convertTo1DArrayAugmentedTuple(XAugHR,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter)
+    return True
 
 def generateFrequencyInformation(X,dict_Signature,uhidSepsisCase,uhidNoSepsisCase):
     plt.figure(5)
