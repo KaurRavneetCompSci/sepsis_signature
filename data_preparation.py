@@ -1,5 +1,9 @@
 import linecache
+from definitions import *
 from collections import defaultdict
+from tsaug import TimeWarp
+import pandas as pd
+
 enablingRandomize = False
 print('---Data Preparation Called---')
 class DataPreparation:
@@ -37,9 +41,20 @@ class DataPreparation:
             print('Exception in read_prepare_data', e)
             self.PrintException()
 
+    #This method augments the timeseries data using warping
+    def augmentData(self,dict_Signature,labels_list):
+        df = pd.DataFrame({"timestamp": [1, 2], "cas_pre": [10, 20], "fl_rat": [30, 40]})
+        my_aug = (TimeWarp() * 2)
+        dfNumpy = df[["timestamp", "cas_pre", "fl_rat"]].to_numpy()
+        aug = my_aug.augment(dfNumpy)
+        print("Input:")
+        print(df[["timestamp", "cas_pre", "fl_rat"]].to_numpy())  # debug
+        print("Output:")
+        print(aug)
+        return aug
 
-    #This method reads two directories containing sepsis and nosepsis patients. Reads CSV from both folders that contain
-    #one folder for a given patient id - UHID. it then creates a CSV file containing physiological data
+    #This method reads two directories containing sepsis and nosepsis patients.  Reads CSV from both folders that contain
+    #one folder for a given patient id - UHID. It then creates a CSV file containing physiological data
     def prepareData(self, filename,dataRead):
         finalSetDS = pd.read_csv(self.filePath+filename,low_memory=False)
         # print('Length of balanced dataset', len(finalSetDS))
