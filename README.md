@@ -34,7 +34,9 @@ This is repository for detecting sepsis using signature method
   - numpy.version.version
 
 
+# Sepsis and no sepsis zip folder location in google drive
 
+https://drive.google.com/drive/folders/1xWzmsMGgKaiHrBx9MN-YcG9mhLCzZtxw?usp=sharing
 
 
 
