@@ -35,7 +35,7 @@ This is repository for detecting sepsis using signature method
 
 
 # Sepsis and no sepsis zip folder location in google drive
-
+This Google drive link has the folders for sepsis and no sepsis zip , and the corresponding csv 
 https://drive.google.com/drive/folders/1xWzmsMGgKaiHrBx9MN-YcG9mhLCzZtxw?usp=sharing
 
 
