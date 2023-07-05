@@ -33,7 +33,7 @@ print('-------------Data Preparation Done------------')
 #We have now 50 patients post augmentation
 
 numberOfPatients  = len(X)
-dict_SignatureHR, dict_SignatureSpO2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final,biggerListUHID,XAugHR,XAugSpO2 = signature.generateSignature(X,Y, depthSignature, windowLength,lengthofDataToProcess)
+dict_SignatureHR, dict_SignatureSpO2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final,biggerListUHID,XAugHR,XAugSpO2 = signature.generateSignature(X,Y, depthSignature, windowLength,lengthofDataToProcess,dataPreparation, dataFilePath)
 print('-------------Data Augmentation Done------------')
 print("---------Signatures Done----------")
 
