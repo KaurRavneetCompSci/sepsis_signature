@@ -25,7 +25,7 @@ print("---------Preparing Data----------")
 dataFilePath = '/Users/ravneetkaur/SignatoryProject/'
 dataPreparation = prepare.DataPreparation(dataFilePath)
 #below method return dictionary object with uhid_sepsis or uhid_nosepsis as key and list of data as value
-X,Y = dataPreparation.prepareData('sepsis_nosepsis.csv',lengthofDataToProcess)
+X,Y,X_list = dataPreparation.prepareData('sepsis_nosepsis.csv',lengthofDataToProcess)
 print('-------------Data Preparation Done------------')
 #We had 25 patients prior to augmentation
 
@@ -33,13 +33,13 @@ print('-------------Data Preparation Done------------')
 #We have now 50 patients post augmentation
 
 numberOfPatients  = len(X)
-dict_SignatureHR, dict_SignatureSpO2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final,biggerListUHID,XAugHR,XAugSpO2 = signature.generateSignature(X,Y, depthSignature, windowLength,lengthofDataToProcess,dataPreparation, dataFilePath)
+dict_SignatureHR, dict_SignatureSpO2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final,biggerListUHID,XAugHR,XAugSpO2 = signature.generateSignature(X,Y,X_list, depthSignature, windowLength,lengthofDataToProcess,dataPreparation, dataFilePath)
 print('-------------Data Augmentation Done------------')
 print("---------Signatures Done----------")
 
 
-visualize.generatePlotsForDataValidation(XAugHR,XAugSpO2,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter)
-plt.show()
+# visualize.generatePlotsForDataValidation(XAugHR,XAugSpO2,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter)
+# plt.show()
 
 #
 # zippedUHIDTupleDict = signature.concatenateSignatureCoefficients(dict_SignatureHR,listUHID,timeBlocksCounter)

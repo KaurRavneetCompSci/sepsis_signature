@@ -65,6 +65,7 @@ class DataPreparation:
         sepsisCase = 1
         noSepsisCase = 0
         dict_Signature = defaultdict(list)
+        dict_Signature_list = defaultdict(list)
         for row in finalSetDS.itertuples():
             try:
                 #print(i,'---->',getattr(row, 'uhid'), getattr(row, 'dischargestatus'))
@@ -95,6 +96,7 @@ class DataPreparation:
                     sepsis = sepsis.astype('float')
                     labels_list.append(1.0)
                     data_list = []
+                    physiological_list = []
                     #print(len(sepsis))
                     uhidKey = []
                     counterData =0
@@ -103,8 +105,10 @@ class DataPreparation:
                         tuple = (row['heartrate'], row['spo2'],counterData)
                         counterData= counterData+1
                         data_list.append(tuple)
+                        physiological_list.append(row['heartrate'])
                     uhidCompositeKey = str(uhidKey)+ '_sepsis'
                     dict_Signature[uhidCompositeKey].append(data_list)
+                    dict_Signature_list[uhidCompositeKey].append(physiological_list)
                 else:
                     preparedData = preparedData[preparedData['heartrate'] >= 0]
                     preparedData = preparedData[preparedData['spo2'] >= 0]
@@ -113,6 +117,7 @@ class DataPreparation:
                     sepsis = sepsis.astype('float')
                     labels_list.append(0.0)
                     data_list = []
+                    physiological_list = []
                     #print(len(sepsis))
                     uhidKey = []
                     counterData =0
@@ -121,15 +126,18 @@ class DataPreparation:
                         tuple = (row['heartrate'], row['spo2'],counterData)
                         counterData= counterData+1
                         data_list.append(tuple)
+                        physiological_list.append(row['heartrate'])
                     uhidCompositeKey = str(uhidKey) + '_nosepsis'
                     dict_Signature[uhidCompositeKey].append(data_list)
+                    dict_Signature_list[uhidCompositeKey].append(physiological_list)
             except Exception as e:
                 print('Exception in prediction_data_death_discharge', e)
                 self.PrintException()
         print(len(dict_Signature))
         #print(len(labels_list))
         X = (dict_Signature)
+        X_list = (dict_Signature_list)
         Y = (labels_list)
-        return X,Y
+        return X,Y,X_list
 
 

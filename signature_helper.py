@@ -1,5 +1,6 @@
 import esig.tosig as ts
 import numpy as np
+import numpy
 from collections import defaultdict
 import csv
 from sklearn.preprocessing import normalize
@@ -7,7 +8,8 @@ from tsaug import TimeWarp, Crop, Quantize, Drift, Reverse
 from tsaug.visualization import plot
 import similaritymeasures
 import matplotlib.pyplot as plt
-
+from tensorflow import keras
+from keras import layers
 
 # This method takes the patient list of sepsis and no-sepsis cases. Each record is augmented using
 # time series augmentation -tsaug. one record becomes two.
@@ -15,7 +17,7 @@ def extractFirst(lst):
     return [item[0] for item in lst]
 
 
-def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess, dataPreparation, dataFilePath):
+def generateSignature(X, Y, X_list, depthSignature, windowLength, lengthofDataToProcess, dataPreparation, dataFilePath):
     y_final = []
     dict_SignatureHR = defaultdict(list)
     dict_SignatureSpo2 = defaultdict(list)
@@ -39,6 +41,8 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
                 max_drift=(0.1, 0.5)) @ 0.8  # with 80% probability, random drift the signal up to 10% - 50%
                     #   + Reverse() @ 0.5  # with 50% probability, reverse the sequence
                     )
+    final_data_for_transformer = []
+    final_data_for_transformer_Y = []
     for uhidKey in X:
         print(uhidKey)
         i = 0
@@ -119,6 +123,7 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
         actualUHID = uhid.split(".")[0]
         k = 0
         eachPatientDataAugmented = patientAugDataHR[k + 1:k + (2 * lengthofDataToProcess):2]
+        eachPatientDataAugmented = extractFirst(eachPatientDataAugmented)
         if ('nosepsis' in uhidKey):
             folderName = "/NoSepsis_Cases/"
             typeOfCase = "Discharge"
@@ -126,12 +131,15 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
             fileName, preparedData = dataPreparation.read_prepare_data_auto(actualUHID, typeOfCase, conditionCase,
                                                                             folderName)
 
-            finalList = extractFirst(eachPatientDataAugmented)
+            finalList = eachPatientDataAugmented
             list_inter = [None] * (len(preparedData) - len(finalList))
             finalList.extend(list_inter)
             preparedData['HR_aug'] = finalList
             preparedData.to_csv(dataFilePath + folderName + actualUHID + "/" + actualUHID + "_aug.csv")
-
+            uhidStr = actualUHID + '.0_nosepsis'
+            data = X_list[uhidStr]
+            final_data_for_transformer_Y.append(0)
+            final_data_for_transformer_Y.append(0)
         else:
             folderName = "/Sepsis_Cases/"
             conditionCase = "(dischargestatus = 'Death' or dischargestatus = 'LAMA' or dischargestatus = 'Sepsis' )"
@@ -140,7 +148,7 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
                                                                             folderName)
 
             sepsis = preparedData[preparedData['sepsis'] == 1]
-            finalList = extractFirst(eachPatientDataAugmented)
+            finalList = eachPatientDataAugmented
             sepsisIDX = (sepsis['Unnamed: 0'].iloc[0])
             list_inter = [None] * (sepsisIDX - len(finalList))
             list_inter.extend(finalList)
@@ -148,7 +156,20 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
             list_inter.extend(list_inter_2)
             preparedData['HR_aug'] = list_inter
             preparedData.to_csv(dataFilePath + folderName + actualUHID + "/" + actualUHID + "_aug.csv")
-
+            uhidStr = actualUHID + '.0_sepsis'
+            data = X_list[uhidStr]
+            final_data_for_transformer_Y.append(1)
+            final_data_for_transformer_Y.append(1)
+        list_inter_2 = []
+        for m in range(lengthofDataToProcess):
+            inter_list = [data[0][m]]
+            list_inter_2.append(inter_list)
+        final_data_for_transformer.append(list_inter_2)
+        list_inter_2 = []
+        for m in range(lengthofDataToProcess):
+            inter_list = [finalList[m]]
+            list_inter_2.append(inter_list)
+        final_data_for_transformer.append(list_inter_2)
         XAugHR[augKeyValue].append(patientAugDataHR)
         XAugSpO2[augKeyValue].append(patientAugDataSpO2)
         indexPatient = indexPatient + 1
@@ -157,10 +178,26 @@ def generateSignature(X, Y, depthSignature, windowLength, lengthofDataToProcess,
             uhidSepsisCase = uhid
             debugCounter = debugCounter + 1
             debugSepsisPlot = True
+    x_list = numpy.array(final_data_for_transformer)
+    y_list = numpy.array(final_data_for_transformer_Y)
+
+    # print((x_train))
+    print((y_list))
+
+    print('-------------Data Preparation Done------------')
+    print(x_list.shape, " ", y_list.shape)
+
+    x_list = x_list.reshape((x_list.shape[0], x_list.shape[1], 1))
+    # x_test = x_test.reshape((x_test.shape[0], Y.shape[1], 1))
+    print(x_list.shape, " ", y_list.shape)
+
+    n_classes = len(np.unique(y_list))
+    print(n_classes)
         # if((debugSepsisPlot and debugNoSepsisPlot)):
         #     break
     # two_dim_stream_physiological = np.random.random(size=(121,2))
     # zippedUHIDTuple = list(repeat([], numberOfPatients))
+    runTransformer(x_list, y_list)
     return dict_SignatureHR, dict_SignatureSpo2, listUHID, uhidSepsisCase, uhidNoSepsisCase, y_final, biggerListUHID, XAugHR, XAugSpO2
 
 
@@ -235,3 +272,86 @@ def similarityBetweenSignatureCoefficients(dict_Signature, listUHID, timeBlocksC
     mae = similaritymeasures.mae(sepsis_data, nosepsis_data)
     print(area, mae, mse)
     return sepsis_data, nosepsis_data
+
+def runTransformer(x_list, y_list):
+    from sklearn.model_selection import train_test_split
+    bestAccuracy = 0
+    accuracy = 0
+    iterations = 50
+    for i in range(iterations):
+        print("counter", i)
+        x_train, x_test, y_train, y_test = train_test_split(x_list, y_list, train_size=0.80)
+        input_shape = x_train.shape[1:]
+        model = build_model(
+            input_shape,
+            head_size=256,
+            num_heads=4,
+            ff_dim=4,
+            num_transformer_blocks=4,
+            mlp_units=[128],
+            mlp_dropout=0.4,
+            dropout=0.25
+        )
+
+        model.compile(
+            loss="sparse_categorical_crossentropy",
+            optimizer=keras.optimizers.Adam(learning_rate=1e-4),
+            metrics=["sparse_categorical_accuracy"],
+        )
+
+        callbacks = [keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)]
+
+        model.fit(
+            x_train,
+            y_train,
+            validation_split=0.2,
+            epochs=200,
+            batch_size=64,
+            callbacks=callbacks
+        )
+
+        s = model.evaluate(x_test, y_test, verbose=1)
+        if (s[1] > bestAccuracy):
+            bestAccuracy = s[1]
+        accuracy = accuracy + s[1]
+    print("Best Accuracy = ", bestAccuracy)
+    print("Average Accuracy = ", accuracy / iterations)
+
+def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
+    # Normalization and Attention
+    x = layers.LayerNormalization(epsilon=1e-6)(inputs)
+    x = layers.MultiHeadAttention(
+        key_dim=head_size, num_heads=num_heads, dropout=dropout
+    )(x, x)
+    x = layers.Dropout(dropout)(x)
+    res = x + inputs
+
+    # Feed Forward Part
+    x = layers.LayerNormalization(epsilon=1e-6)(res)
+    x = layers.Conv1D(filters=ff_dim, kernel_size=1, activation="relu")(x)
+    x = layers.Dropout(dropout)(x)
+    x = layers.Conv1D(filters=inputs.shape[-1], kernel_size=1)(x)
+    return x + res
+
+
+def build_model(
+        input_shape,
+        head_size,
+        num_heads,
+        ff_dim,
+        num_transformer_blocks,
+        mlp_units,
+        dropout=0,
+        mlp_dropout=0
+):
+    inputs = keras.Input(shape=input_shape)
+    x = inputs
+    for _ in range(num_transformer_blocks):
+        x = transformer_encoder(x, head_size, num_heads, ff_dim, dropout)
+
+    x = layers.GlobalAveragePooling1D(data_format="channels_first")(x)
+    for dim in mlp_units:
+        x = layers.Dense(dim, activation="relu")(x)
+        x = layers.Dropout(mlp_dropout)(x)
+    outputs = layers.Dense(2, activation="softmax")(x)
+    return keras.Model(inputs, outputs)

@@ -1,7 +1,7 @@
 from keras.layers import  Dense
 from keras.layers import LSTM
 from keras.models import Sequential, Model
-from keras.optimizers import adam_v2
+# from keras.optimizers import adam_v2
 import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
