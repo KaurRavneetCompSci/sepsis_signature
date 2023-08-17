@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import data_preparation as prepare
 import visualize_helper as visualize
-import signature_helper as signature
+import similarity_helper as similarity
+import signature_helper_transformer as signature
 import model_helper as modelhelper
 from cycler import cycler
 import matplotlib as mpl
@@ -36,22 +37,22 @@ numberOfPatients  = len(X)
 dict_SignatureHR, dict_SignatureSpO2, listUHID, uhidSepsisCase, uhidNoSepsisCase,y_final,biggerListUHID,XAugHR,XAugSpO2 = signature.generateSignature(X,Y,X_list, depthSignature, windowLength,lengthofDataToProcess,dataPreparation, dataFilePath)
 print('-------------Data Augmentation Done------------')
 print("---------Signatures Done----------")
+plotCounter = 5
+
+visualize.generatePlotsForDataValidation(XAugHR,XAugSpO2,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter)
+plt.show()
 
 
-# visualize.generatePlotsForDataValidation(XAugHR,XAugSpO2,dict_SignatureHR,dict_SignatureSpO2,windowLength,lengthofDataToProcess,timeBlocksCounter)
-# plt.show()
+zippedUHIDTupleDict = signature.concatenateSignatureCoefficients(dict_SignatureHR,listUHID,timeBlocksCounter)
+print("---------Signatures Coefficient Concatenation Done----------")
 
-#
-# zippedUHIDTupleDict = signature.concatenateSignatureCoefficients(dict_SignatureHR,listUHID,timeBlocksCounter)
-# print("---------Signatures Coefficient Concatenation Done----------")
-#
-# #signature.similarityBetweenSignatureCoefficients(dict_SignatureHR,biggerListUHID,timeBlocksCounter,signatureLength)
-# #print("---------Plotting similarity amongst sepsis and no-sepsis cases----------")
-#
-#
-# signature.writeSignatureCoefficientsIntoCSV(dataFilePath, dict_SignatureHR,listUHID,timeBlocksCounter)
-# print("---------Wrote Signatures Coefficient into a file----------")
-#
+#similarity.similarityBetweenSignatureCoefficients(plotCounter, dict_SignatureHR,biggerListUHID,timeBlocksCounter,signatureLength)
+# print("---------Plotting similarity amongst sepsis and no-sepsis cases----------")
+
+
+signature.writeSignatureCoefficientsIntoCSV(dataFilePath, dict_SignatureHR,listUHID,timeBlocksCounter)
+print("---------Wrote Signatures Coefficient into a file----------")
+
 # visualize.generateFrequencyInformation(X,dict_SignatureHR,uhidSepsisCase,uhidNoSepsisCase)
 # plt.show()
 #
@@ -65,5 +66,5 @@ print("---------Signatures Done----------")
 #
 # print("---------Modeling Data----------")
 # model = modelhelper.executeModelWithOneLeaveOut(dict_SignatureHR,y_final,listUHID,timeBlocksCounter,signatureLength)
-#
-#
+
+
