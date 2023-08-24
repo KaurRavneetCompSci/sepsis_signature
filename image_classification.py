@@ -7,7 +7,7 @@ import cv2
 import os
 import numpy
 from sklearn.model_selection import train_test_split
-
+#Prepare the data
 num_classes = 2
 input_shape = (96, 96, 3)
 
@@ -41,7 +41,7 @@ print(x_train.shape)
 print(x_test.shape)
 print(y_train.shape)
 print(y_test.shape)
-
+#Configure the hyperparameters
 weight_decay = 0.0001
 batch_size = 48  #96
 num_epochs = 100
@@ -57,7 +57,7 @@ print(f"Patch size: {patch_size} X {patch_size} = {patch_size ** 2} ")
 print(f"Patches per image: {num_patches}")
 print(f"Elements per patch (3 channels): {(patch_size ** 2) * 3}")
 
-
+#Build a classification model
 def build_classifier(blocks, positional_encoding=False):
     inputs = layers.Input(shape=input_shape)
     # Augment data.
@@ -83,7 +83,7 @@ def build_classifier(blocks, positional_encoding=False):
     # Create the Keras model.
     return keras.Model(inputs=inputs, outputs=logits)
 
-
+# Define an experiment : implement a utility function to compile, train, and evaluate a given model.
 def run_experiment(model):
     # Create Adam optimizer with weight decay.
     optimizer = tfa.optimizers.AdamW(
@@ -147,7 +147,7 @@ data_augmentation = keras.Sequential(
 # # Compute the mean and the variance of the training data for normalization.
 # data_augmentation.layers[0].adapt(x_train)
 
-
+#Implement patch extraction as a layer
 class Patches(layers.Layer):
     def __init__(self, patch_size, num_patches):
         super().__init__()
@@ -167,7 +167,7 @@ class Patches(layers.Layer):
         patches = tf.reshape(patches, [batch_size, self.num_patches, patch_dims])
         return patches
 
-
+#The MLP-Mixer model
 class MLPMixerLayer(layers.Layer):
     def __init__(self, num_patches, hidden_units, dropout_rate, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -210,7 +210,7 @@ class MLPMixerLayer(layers.Layer):
      #   x= softmax
         return x
 
-
+# Build, train, and evaluate the MLP-Mixer model
 mlpmixer_blocks = keras.Sequential(
     [MLPMixerLayer(num_patches, embedding_dim, dropout_rate) for _ in range(num_blocks)]
 )
